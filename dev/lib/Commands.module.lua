@@ -1,5 +1,7 @@
 local GUI = require("./GUI.module.lua")
 
+local Players = game["Players"]
+
 local Commands = {}
 
 local function splitString(inp, sep)
@@ -15,7 +17,7 @@ local function splitString(inp, sep)
 end
 
 local function parseCommand(cmd)
-    local cmd = string.lower(cmd)
+    cmd = string.lower(cmd)
     local split = splitString(cmd, " ")
     local commandName = split[1]
     table.remove(split, 1)
@@ -47,14 +49,21 @@ local function RunCommand(cmd)
     end
 end
 
+local function getRandomTarget()
+    local players = Players:GetPlayers()
+    return players[math.random(2, #players)]
+end
+
 local function FindTargetPlayer(name)
-    local Players = game["Players"]
+    name = string.lower(name)
+    if name == "random" then return getRandomTarget() end
+    if name == "me" then return Players.LocalPlayer end
     for _, player in pairs(Players:GetPlayers()) do
-        if string.find(string.lower(player.Name), string.lower(name)) then
+        if string.find(string.lower(player.Name), name) then
             return player
         end
     end
-    return game["Players"].LocalPlayer
+    return Players.LocalPlayer
 end
 
 return {

@@ -151,6 +151,8 @@ end)()
 __module_env["dev/lib/Commands.module.lua"] = (function()
 local GUI = __module_env["dev/lib/GUI.module.lua"]
 
+local Players = game["Players"]
+
 local Commands = {}
 
 local function splitString(inp, sep)
@@ -166,7 +168,7 @@ local function splitString(inp, sep)
 end
 
 local function parseCommand(cmd)
-    local cmd = string.lower(cmd)
+    cmd = string.lower(cmd)
     local split = splitString(cmd, " ")
     local commandName = split[1]
     table.remove(split, 1)
@@ -198,14 +200,21 @@ local function RunCommand(cmd)
     end
 end
 
+local function getRandomTarget()
+    local players = Players:GetPlayers()
+    return players[math.random(2, #players)]
+end
+
 local function FindTargetPlayer(name)
-    local Players = game["Players"]
+    name = string.lower(name)
+    if name == "random" then return getRandomTarget() end
+    if name == "me" then return Players.LocalPlayer end
     for _, player in pairs(Players:GetPlayers()) do
-        if string.find(string.lower(player.Name), string.lower(name)) then
+        if string.find(string.lower(player.Name), name) then
             return player
         end
     end
-    return game["Players"].LocalPlayer
+    return Players.LocalPlayer
 end
 
 return {
@@ -608,6 +617,8 @@ local CommandList = Components.CommandsLabel
 local Players = game["Players"];
 local LocalPlayer = Players.LocalPlayer;
 
+local activatetool = activatetool or function() return error("activatetool not implemented in executor") end
+
 local function onSubmit()
     local text = CMDInput.Text
     if text == "" then GUI.SetOpen(false) return end
@@ -702,9 +713,11 @@ Commands.AddCommand("jumppower", function(args)
 end, "Sets jump power")
 
 Commands.AddCommand("crash", function()
-    while true do
-        LocalPlayer:Respawn()
-    end
+    spawn(function()
+        while true do
+            LocalPlayer:Respawn()
+        end
+    end)
 end, "Crashes the server")
 
 Commands.AddCommand("respawn", function()
@@ -745,6 +758,29 @@ Commands.AddCommand("clicktp", function(args)
     tool.Parent = LocalPlayer["Backpack"]
 end, "Gives you a click tp tool")
 
+Commands.AddCommand("firetool", function(args)
+    local targetName = args[1]
+    if not targetName then return end
+
+    local targetPlayer = Commands.FindTargetPlayer(targetName)
+    if not targetPlayer then return end
+
+    local tool = targetPlayer:FindChildByClass("Tool")
+    if not tool then return end
+
+    local res = activatetool(tool)
+    print("firetool result:", res)
+
+end, "Tries to activate target's tool")
+
+Commands.AddCommand("test", function()
+    local player = game["Players"].LocalPlayer
+    local tool = player:FindChildByClass("Tool")
+    if tool then
+        activatetool(tool)
+    end
+end, "test command")
+
 Commands.AddCommand("unfly", function(args)
     FlyLib.ToggleFly(false)
 end, "Disables fly")
@@ -781,7 +817,6 @@ end, "Sets freecam speed")
 --     if not targetPlayer then return end
 
 --     while true do
---         -- teleport slightly behind player
 --         LocalPlayer.Position = targetPlayer.Position - Vector3.New(0, 0, 3)
 --         task.wait()
 --     end
